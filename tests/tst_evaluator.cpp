@@ -32,6 +32,10 @@ private slots:
         QTest::newRow("nPr") << "nPr(5, 2)" << 20.0;
         QTest::newRow("math mod") << "mod(-7, 3)" << 2.0;
         QTest::newRow("gcd") << "gcd(12, 18)" << 6.0;
+        QTest::newRow("lcm") << "lcm(4, 6)" << 12.0;
+        QTest::newRow("lcm negative") << "lcm(-4, 6)" << 12.0;
+        QTest::newRow("lcm zero") << "lcm(0, 5)" << 0.0;
+        QTest::newRow("lcm beyond long long") << "lcm(1e15, 999999999999999)" << 999999999999999e15;
         QTest::newRow("python power") << "2**10" << 1024.0;
     }
 
@@ -58,6 +62,14 @@ private slots:
         QCOMPARE(test::q(steps[0].result), QStringLiteral("12"));
         QCOMPARE(test::q(steps[1].expression), QStringLiteral("2 + 12"));
         QCOMPARE(test::q(steps[1].result), QStringLiteral("14"));
+    }
+
+    void zeroToThePowerZeroIsExplained()
+    {
+        core::Environment environment;
+        core::Evaluator evaluator(environment, core::MathLibrary::standard());
+        QCOMPARE(evaluator.evaluate(*core::parse("0^0")), 1.0);
+        QVERIFY(test::q(evaluator.steps().back().explanation).contains(QStringLiteral("convention")));
     }
 
     void assignmentStoresVariable()

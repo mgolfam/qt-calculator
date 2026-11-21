@@ -28,6 +28,7 @@ double ensureFinite(double value, const Node& node)
 
 std::string explainPower(double base, double exponent)
 {
+    if (exponent == 0.0 && base == 0.0) return "0⁰ is defined as 1 by convention (an empty product)";
     if (exponent == 0.0) return "Any non-zero number to the power 0 is 1";
     if (exponent == 1.0) return "A number to the power 1 is itself";
     if (exponent == 0.5) return "The power ½ is the same as a square root";

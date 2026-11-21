@@ -171,7 +171,11 @@ MathLibrary::MathLibrary()
         });
     add("lcm", 2, numbers, "lcm(a, b)", "Least common multiple", "lcm(4, 6) = 12", AngleRole::None,
         [](const Args& a) {
-            return static_cast<double>(std::lcm(requireInteger(a[0], "lcm"), requireInteger(a[1], "lcm")));
+            const long long x = requireInteger(a[0], "lcm");
+            const long long y = requireInteger(a[1], "lcm");
+            if (x == 0 || y == 0) return 0.0;
+            // std::lcm overflows long long for large inputs; finish the product in double.
+            return std::abs(static_cast<double>(x / std::gcd(x, y)) * static_cast<double>(y));
         });
     add("fact", 1, numbers, "fact(n)", "Factorial: 1 × 2 × … × n (same as n!)", "fact(5) = 120", AngleRole::None,
         [](const Args& a) { return factorial(a[0]); });
