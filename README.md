@@ -1,27 +1,90 @@
 # Learning Calculator
 
-A Qt 6 calculator that **shows its work**. Type any expression and watch how a
-calculator really solves it: the text is split into tokens, the tokens become a
-syntax tree, and the tree is evaluated one small step at a time — each step
-explained in plain words.
+A Qt 6 scientific calculator that **shows its work**.
 
-![Learning Calculator](docs/screenshot.png)
+![Steps tab](docs/screenshots/steps.png)
 
-## Features
+## What's the "learning" part?
 
-| Tab | What you learn |
-| --- | --- |
-| **Steps** | The fully bracketed order of operations and a numbered, explained step list (`3 × 4 = 12 — Multiplication`). Errors explain *why*, e.g. *"Division by zero is undefined — no number times 0 gives 5"*. |
-| **Tokens** | Stage 1 (lexing): every token with its kind and position, plus postfix / RPN notation. |
-| **Tree** | Stage 2 (parsing): the syntax tree, coloured by node kind; badges match the step numbers. |
-| **Graph** | Plot several functions at once (`sin(x); x^2/4`). Pan, zoom, hover to read values. |
-| **Bases** | Binary / octal / decimal / hex with repeated-division and place-value steps. |
-| **Reference** | Order of operations, constants and every function, searchable; double-click to insert. |
-| **History** | Past calculations and stored variables (history is saved between runs). |
+A normal calculator only gives you the answer. This one also shows *how* it got
+there, the same way a teacher would on a whiteboard:
 
-Also: live preview while typing, `DEG`/`RAD` toggle, variables (`r = 3`, then `π r^2`),
-`ans`, implicit multiplication (`2x`, `3(4 + 1)`), `**` as power, `×  ÷  −  π` input,
-↑/↓ history, and the error position highlighted in the input.
+- **Which operation comes first:** `2 + 3 × 4` is shown as `2 + (3 × 4)`.
+- **Every intermediate result**, numbered, with a one-line explanation:
+  `3 × 4 = 12 — Multiplication`, `2^3 = 8 — Repeated multiplication: 2 × 2 × 2`.
+- **Why something fails:** `5 / (2 − 2)` → *"Division by zero is undefined — no number
+  times 0 gives 5"*, with the bad spot highlighted in the input.
+- **How a computer reads math:** the text is cut into tokens, the tokens become a
+  tree, and the tree is solved from the bottom up. Each stage has its own tab.
+
+It is useful for students practising order of operations, trigonometry, logs and
+number bases — and for programmers who want to see how a parser and interpreter work.
+
+## Screenshots
+
+### Steps — the worked solution
+
+Order of operations, then every step with an explanation and the final answer.
+
+![Steps](docs/screenshots/steps.png)
+
+### Tree — how the expression is understood
+
+The syntax tree. Operators higher up are done later; the purple badges match the step numbers.
+
+![Tree](docs/screenshots/tree.png)
+
+### Tokens — how the text is read
+
+The expression split into tokens, plus the fully bracketed form and postfix (RPN) notation.
+
+![Tokens](docs/screenshots/tokens.png)
+
+### Graph — plot functions of x
+
+Several functions at once, separated by `;`. Scroll to zoom, drag to pan, hover to read values.
+Your variables work too (`a = 0.5`, then `a x^2`).
+
+![Graph](docs/screenshots/graph.png)
+
+### Bases — binary, octal, decimal, hex
+
+Converts between any bases from 2 to 36, showing the repeated division (and place values) step by step.
+
+![Bases](docs/screenshots/bases.png)
+
+### Reference — everything it understands
+
+Order of operations, constants and every function, searchable. Double-click to insert.
+
+![Reference](docs/screenshots/reference.png)
+
+### History & variables
+
+Past calculations (saved between runs) and stored variables. ↑ / ↓ in the input browses history.
+
+![History](docs/screenshots/history.png)
+
+### Friendly errors
+
+The error is explained, the bad character is highlighted, and the steps before the failure are kept.
+
+![Error](docs/screenshots/error.png)
+
+### Start screen
+
+![Welcome](docs/screenshots/welcome.png)
+
+## Features at a glance
+
+- Live result while typing; press **Enter** or **=** to commit
+- `DEG` / `RAD` toggle for trigonometry
+- Variables (`r = 3`, then `π r^2`) and `ans` for the last answer
+- Implicit multiplication (`2x`, `3(4 + 1)`), `**` as power, `× ÷ − π` input
+- Functions: `sin cos tan asin acos atan sinh cosh tanh sqrt cbrt root exp ln log log2 logb abs round floor ceil min max mod gcd lcm fact nCr nPr`
+- Constants: `π`, `τ`, `e`, `φ`
+- After a result, typing an operator continues from the answer
+- Keyboard: Enter, Esc (clear), ↑/↓ (history), Ctrl+1…7 (tabs)
 
 ## Quick start
 
@@ -50,7 +113,7 @@ Without make: `cmake -S . -B build -G Ninja && cmake --build build && ./build/bi
 The code follows Clean Architecture: dependencies point **inwards only**, and the
 mathematical core knows nothing about Qt.
 
-```
+```text
  ┌──────────────────────────── main (composition root) ───────────────────────────┐
  │   ┌──────────── ui (Qt Widgets) ───────────┐  ┌──── infrastructure (Qt Core) ───┐│
  │   │ MainWindow, panels, painted widgets    │  │ JsonHistoryRepository           ││
@@ -66,7 +129,7 @@ mathematical core knows nothing about Qt.
  └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-```
+```text
 src/
 ├── core/            Domain: tokens, recursive-descent parser, AST + visitors, evaluator
 ├── application/     Use cases: preview / submit / plot, history port
@@ -76,6 +139,7 @@ src/
 tests/               QtTest suites for every layer (run with `make test`)
 resources/           Stylesheet (Qt resource)
 scripts/             Dependency installers for Linux, macOS, Windows
+docs/screenshots/    Images used in this README
 ```
 
 ### How an expression is evaluated
