@@ -1,0 +1,17 @@
+# Build output
+/build/
+/build-*/
+
+# IDE / tooling
+*.pro.user*
+*.autosave
+.qtcreator/
+.vscode/
+.idea/
+.cache/
+compile_commands.json
+CMakeLists.txt.user*
+
+# OS
+.DS_Store
+Thumbs.db
