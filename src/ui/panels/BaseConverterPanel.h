@@ -23,7 +23,8 @@ signals:
     void useAnswerRequested();
 
 private:
-    void convert();
+    void convert(const QString& notice = QString());
+    void showError(const QString& message);
 
     QLineEdit* input_ = nullptr;
     QSpinBox* fromBase_ = nullptr;

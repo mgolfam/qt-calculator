@@ -2,6 +2,7 @@
 
 #include "core/BaseConverter.h"
 #include "core/Errors.h"
+#include "core/NumberFormat.h"
 #include "ui/Strings.h"
 #include "ui/Theme.h"
 
@@ -11,6 +12,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSpinBox>
 #include <QTextBrowser>
 #include <QVBoxLayout>
@@ -125,9 +127,9 @@ BaseConverterPanel::BaseConverterPanel(QWidget* parent)
     layout->addLayout(cards);
     layout->addWidget(steps_, 1);
 
-    connect(input_, &QLineEdit::textChanged, this, &BaseConverterPanel::convert);
-    connect(fromBase_, qOverload<int>(&QSpinBox::valueChanged), this, &BaseConverterPanel::convert);
-    connect(toBase_, qOverload<int>(&QSpinBox::valueChanged), this, &BaseConverterPanel::convert);
+    connect(input_, &QLineEdit::textChanged, this, [this] { convert(); });
+    connect(fromBase_, qOverload<int>(&QSpinBox::valueChanged), this, [this] { convert(); });
+    connect(toBase_, qOverload<int>(&QSpinBox::valueChanged), this, [this] { convert(); });
     connect(useAnswer, &QPushButton::clicked, this, &BaseConverterPanel::useAnswerRequested);
 
     convert();
@@ -135,12 +137,35 @@ BaseConverterPanel::BaseConverterPanel(QWidget* parent)
 
 void BaseConverterPanel::setDecimalValue(double value)
 {
-    if (!std::isfinite(value) || std::abs(value) > 9.2e18) return;
-    fromBase_->setValue(10);
-    input_->setText(QString::number(std::llround(value)));
+    const QString shown = toQString(core::formatNumber(value));
+    if (!std::isfinite(value) || std::abs(value) > 9.2e18) {
+        showError(tr("The last answer (%1) is too large to convert — only whole numbers up to about "
+                     "9.2 × 10¹⁸ (2⁶³ − 1) fit.")
+                      .arg(shown));
+        return;
+    }
+
+    const long long whole = std::llround(value);
+    {
+        // Set both inputs first, then convert once.
+        const QSignalBlocker blockBase(fromBase_);
+        const QSignalBlocker blockInput(input_);
+        fromBase_->setValue(10);
+        input_->setText(QString::number(whole));
+    }
+    convert(static_cast<double>(whole) == value
+                ? QString()
+                : tr("The last answer %1 is not a whole number, so it was rounded to %2.").arg(shown).arg(whole));
 }
 
-void BaseConverterPanel::convert()
+void BaseConverterPanel::showError(const QString& message)
+{
+    result_->setText(QStringLiteral("—"));
+    for (QLabel* label : {binary_, octal_, decimal_, hex_}) label->setText(QStringLiteral("—"));
+    steps_->setHtml(QStringLiteral("<p class='error'>%1</p>").arg(message.toHtmlEscaped()));
+}
+
+void BaseConverterPanel::convert(const QString& notice)
 {
     const int from = fromBase_->value();
     const int to = toBase_->value();
@@ -158,6 +183,7 @@ void BaseConverterPanel::convert()
         hex_->setText(toQString(core::BaseConverter::fromDecimal(decimal.value, 16).digits));
 
         QString html;
+        if (!notice.isEmpty()) html += QStringLiteral("<p class='muted'>%1</p>").arg(notice.toHtmlEscaped());
         if (from != 10) {
             html += tr("<h3>1 · Base %1 → decimal (add up place values)</h3>").arg(from) + stepsHtml(decimal.steps);
         }
@@ -168,13 +194,11 @@ void BaseConverterPanel::convert()
                     stepsHtml(target.steps);
         }
         if (from == 10 && to == 10) {
-            html = tr("<p class='muted'>Both bases are 10 — nothing to convert. Pick another base above.</p>");
+            html += tr("<p class='muted'>Both bases are 10 — nothing to convert. Pick another base above.</p>");
         }
         steps_->setHtml(html);
     } catch (const core::CalcError& error) {
-        result_->setText(QStringLiteral("—"));
-        for (QLabel* label : {binary_, octal_, decimal_, hex_}) label->setText(QStringLiteral("—"));
-        steps_->setHtml(QStringLiteral("<p class='error'>%1</p>").arg(toQString(error.what()).toHtmlEscaped()));
+        showError(toQString(error.what()));
     }
 }
 
