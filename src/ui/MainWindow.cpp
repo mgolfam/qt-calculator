@@ -45,7 +45,7 @@ const char* const kTips[] = {
 };
 
 /// Characters that, typed right after a result, continue the calculation from `ans`.
-const QString kContinuationOperators = QStringLiteral("+−×÷^!");
+const QString kContinuationOperators = QStringLiteral("+−×÷^!-*/");
 
 }  // namespace
 
@@ -224,6 +224,7 @@ void MainWindow::connectSignals()
     connect(history_, &HistoryPanel::clearVariablesRequested, this, [this] {
         service_.clearVariables();
         refreshHistoryPanel();
+        graph_->replot();
         onExpressionChanged(display_->expression());
     });
     connect(graph_, &GraphPanel::useCalculatorExpressionRequested, this,
@@ -235,7 +236,15 @@ void MainWindow::connectSignals()
 void MainWindow::onExpressionChanged(const QString& text)
 {
     if (!navigatingHistory_) historyCursor_ = -1;
-    justSubmitted_ = false;
+    if (justSubmitted_) {
+        justSubmitted_ = false;
+        // The result is selected, so a typed operator just replaced it. Continue from the
+        // answer instead, exactly like the keypad does.
+        if (text.size() == 1 && kContinuationOperators.contains(text.front())) {
+            display_->setExpression(QStringLiteral("ans") + text);  // re-enters this slot
+            return;
+        }
+    }
 
     const application::Evaluation evaluation = service_.preview(toStdString(text));
     display_->showPreview(evaluation);
@@ -250,6 +259,7 @@ void MainWindow::onSubmitted(const QString& text)
 
     if (evaluation.success) {
         refreshHistoryPanel();
+        if (evaluation.assignedVariable) graph_->replot();  // curves may use the variable
         historyCursor_ = -1;
         justSubmitted_ = true;
         display_->selectAll();  // typing now replaces the expression
